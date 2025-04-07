@@ -31,6 +31,7 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
 2. Install Dependencies
    ```bash
    pip install web3
+   pip3 install web3 python-dotenv
 
 3. Install Python 3.10 :
    ```bash
