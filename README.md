@@ -34,20 +34,20 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
    sudo apt install software-properties-common -y
    add-apt-repository ppa:deadsnakes/ppa
    sudo apt install python3.10
-   sudo apt install python3-pip
 
-3. Install Dependencies
+3. Membuat Virtual Environment :
    ```bash
-   pip install web3
-   pip3 install web3 python-dotenv
+   python3.10 -m venv venv
+   source venv/bin/activate
 
 
-4. Prepare Privatekey.txt :
+4. Dependency Installation :
    ```bash
-   Isi dengan Private key 
+   pip install -r requirements.txt
+ 
 
 
-2. Execution Script
+2. Execution Script :
    ```bash
    Python3 Autotransaction.py
    or 
