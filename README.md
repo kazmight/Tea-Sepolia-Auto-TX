@@ -23,7 +23,7 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
 
 ## ⚙️ Instalasi
 
-1. Clone repositori ini:
-   ```bash
-   git clone https://github.com/your-repo/helper-tea-sepolia.git
-   cd helper-tea-sepolia# Tea-Sepolia-Auto-TX
+1. Clone the Repository
+bash```
+git clone https://github.com/kazmight/Tea-Sepolia-Auto-TX.git
+cd Tea-Sepolia-Auto-TX
