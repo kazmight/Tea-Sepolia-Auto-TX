@@ -47,7 +47,9 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
 
 2. Execution Script
    ```bash
-   pip install web3
+   Python3 Autotransaction.py
+   or 
+   Python Autotransaction.py
 
 
 **Input Prompts:**
