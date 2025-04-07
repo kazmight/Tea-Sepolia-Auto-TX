@@ -40,19 +40,15 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
    python3.10 -m venv venv
    source venv/bin/activate
 
-
 4. Dependency Installation :
    ```bash
    pip install -r requirements.txt
  
-
-
-2. Execution Script :
+5. Execution Script :
    ```bash
    Python3 Autotransaction.py
    or 
    Python Autotransaction.py
-
 
 **Input Prompts:**
 
