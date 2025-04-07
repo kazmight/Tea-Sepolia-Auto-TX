@@ -21,7 +21,7 @@ print(f'{RED}- {GREEN}Auto {YELLOW}Interaction {RED}Contract{RESET}')
 print(f'{GREEN}- {YELLOW}Auto {RED}Send {GREEN}Spesific {YELLOW}Token {RED}To {GREEN}Random {YELLOW}Recipient {RED}Address{RESET}')
 print(f'')
 
-print(f'Tea Sepolia Auto Transaction By INVICTUS LABS')
+print(f'- Tea Sepolia Auto Transaction By INVICTUS LABS')
 print(f'- Auto Send Native To Random Recipient Address')
 print(f'- Auto Deploy Contract')
 print(f'- Auto Interaction Contract')
