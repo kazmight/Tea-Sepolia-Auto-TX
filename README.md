@@ -39,7 +39,7 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
 
 3. Membuat Virtual Environment :
    ```bash
-   python3.10 -m venv venv
+   python3 -m venv venv
    source venv/bin/activate
 
 4. Dependency Installation :
