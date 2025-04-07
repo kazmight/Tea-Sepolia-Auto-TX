@@ -45,7 +45,7 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
 4. Dependency Installation :
    ```bash
    pip install web3 python-dotenv
-   pip install -r requirements.txt
+
  
 5. Execution Script :
    ```bash
