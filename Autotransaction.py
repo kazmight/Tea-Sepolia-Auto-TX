@@ -21,12 +21,6 @@ print(f'{RED}- {GREEN}Auto {YELLOW}Interaction {RED}Contract{RESET}')
 print(f'{GREEN}- {YELLOW}Auto {RED}Send {GREEN}Spesific {YELLOW}Token {RED}To {GREEN}Random {YELLOW}Recipient {RED}Address{RESET}')
 print(f'')
 
-print(f'- Tea Sepolia Auto Transaction By INVICTUS LABS')
-print(f'- Auto Send Native To Random Recipient Address')
-print(f'- Auto Deploy Contract')
-print(f'- Auto Interaction Contract')
-print(f'- Auto Send Spesific Token To Random Recipient Address')
-print(f'')
 
 web3 = Web3(Web3.HTTPProvider("https://tea-sepolia.g.alchemy.com/public"))
 chainId = web3.eth.chain_id
