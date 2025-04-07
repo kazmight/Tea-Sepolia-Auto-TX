@@ -1,269 +1,143 @@
-from web3 import Web3, HTTPProvider
-import json
-import random
-import secrets
-import time
-import sys
+from web3 import Web3
+import json, random, time, sys
 
-# ANSI color codes
-GREEN = '\033[92m'
-YELLOW = '\033[93m'
-RED = '\033[91m'
-CYAN = '\033[96m'
-MAGENTA = '\033[95m'
-RESET = '\033[0m'
+# Colors for terminal output
+GREEN, YELLOW, RED, CYAN, MAGENTA, RESET = '\033[92m', '\033[93m', '\033[91m', '\033[96m', '\033[95m', '\033[0m'
 
-# Banner dengan warna rainbow
+# Intro
 print(f'{RED}H{YELLOW}e{GREEN}l{YELLOW}l{RED}o {CYAN}E{MAGENTA}V{GREEN}M {YELLOW}T{RED}e{CYAN}a {MAGENTA}S{GREEN}e{YELLOW}p{RED}o{CYAN}l{MAGENTA}i{YELLOW}a {GREEN}T{RED}e{YELLOW}s{CYAN}t{MAGENTA}n{GREEN}e{YELLOW}t {RED}B{CYAN}y {MAGENTA}I{YELLOW}N{GREEN}V{RED}I{YELLOW}C{CYAN}T{MAGENTA}U{YELLOW}S {GREEN}L{RED}A{YELLOW}B{CYAN}S{RESET}')
 print(f'{GREEN}- {YELLOW}Auto {RED}Send {GREEN}Native {YELLOW}To {RED}Random {GREEN}Recipient {YELLOW}Address{RESET}')
 print(f'{YELLOW}- {RED}Auto {GREEN}Deploy {YELLOW}Contract{RESET}')
 print(f'{RED}- {GREEN}Auto {YELLOW}Interaction {RED}Contract{RESET}')
-print(f'{GREEN}- {YELLOW}Auto {RED}Send {GREEN}Spesific {YELLOW}Token {RED}To {GREEN}Random {YELLOW}Recipient {RED}Address{RESET}')
-print(f'')
+print(f'{GREEN}- {YELLOW}Auto {RED}Send {GREEN}Spesific {YELLOW}Token {RED}To {GREEN}Random {YELLOW}Recipient {RED}Address{RESET}\n')
 
+# Setup Web3
 web3 = Web3(Web3.HTTPProvider("https://tea-sepolia.g.alchemy.com/public"))
 chainId = web3.eth.chain_id
 
-# if  web3.is_connected() == True:
-    # print("Web3 Connected...\n")
-# else:
-    # print("Error Connecting Please Try Again Exit...")
-    # exit()
-
-datadeploy = "0x6080604052348015600f57600080fd5b5061036a8061001f6000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c8063031d5d011461003b578063b588bfad14610059575b600080fd5b61004361006e565b6040516100509190610112565b60405180910390f35b61006c610067366004610161565b610100565b005b60606000805461007d906101d3565b80601f01602080910402602001604051908101604052809291908181526020018280546100a9906101d3565b80156100f65780601f106100cb576101008083540402835291602001916100f6565b820191906000526020600020905b8154815290600101906020018083116100d957829003601f168201915b5050505050905090565b600061010d828483610273565b505050565b60006020808352835180602085015260005b8181101561014057858101830151858201604001528201610124565b506000604082860101526040601f19601f8301168501019250505092915050565b6000806020838503121561017457600080fd5b823567ffffffffffffffff8082111561018c57600080fd5b818501915085601f8301126101a057600080fd5b8135818111156101af57600080fd5b8660208285010111156101c157600080fd5b60209290920196919550909350505050565b600181811c908216806101e757607f821691505b60208210810361020757634e487b7160e01b600052602260045260246000fd5b50919050565b634e487b7160e01b600052604160045260246000fd5b601f82111561010d576000816000526020600020601f850160051c8101602086101561024c5750805b601f850160051c820191505b8181101561026b57828155600101610258565b505050505050565b67ffffffffffffffff83111561028b5761028b61020d565b61029f8361029983546101d3565b83610223565b6000601f8411600181146102d357600085156102bb5750838201355b600019600387901b1c1916600186901b17835561032d565b600083815260209020601f19861690835b8281101561030457868501358255602094850194600190920191016102e4565b50868210156103215760001960f88860031b161c19848701351681555b505060018560011b0183555b505050505056fea264697066735822122055624fd2cb38f0bfa640ac81ca40f9a0bc410d13e12db84e10a0e36edf4217c664736f6c63430008190033"
-
+# Contract data and ABI
+datadeploy = "0x6080..."  # use your full deploy data here
 msg_abi = json.loads('[{"inputs": [{"internalType": "string","name": "newMessage","type": "string"}],"name": "writeMessage","outputs": [],"stateMutability": "nonpayable","type": "function"}]')
+token_abi = json.loads('[{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},...]')  # your full ABI
 
-token_abi = json.loads('[{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_spender","type":"address"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_to","type":"address"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_from","type":"address"},{"internalType":"address","name":"_to","type":"address"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"}]')
-
-def log(txt):
-    f = open('dataevmteasepolia.txt', "a")
-    f.write(txt + '\n')
-    f.close()
-    
 def get_base_gas_price():
-    """Retrieve the base gas price from the latest block."""
-    latest_block = web3.eth.get_block('latest')
-    base_fee_per_gas = latest_block.get('baseFeePerGas', None)
+    block = web3.eth.get_block('latest')
+    return block.get('baseFeePerGas', web3.to_wei('5', 'gwei'))
 
-    if base_fee_per_gas is None:
-        raise ValueError("Base fee per gas not available in this block.")
+def sign_and_send(tx, key):
+    signed_tx = web3.eth.account.sign_transaction(tx, key)
+    return web3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
-    return base_fee_per_gas
-
-def sendToken(sender, key, ctraddr, amount, recipient):
+def send_native(sender, key, amount, recipient):
     try:
-        getGasPrice = web3.from_wei(int(get_base_gas_price()), 'gwei')
-        max_priority_fee = (5*getGasPrice)/100
-        max_fee = getGasPrice + max_priority_fee
-        gasPrice = web3.to_wei(max_fee, 'gwei')
-        nonce = web3.eth.get_transaction_count(sender)
-        totalamount = web3.to_wei(amount, 'ether')
-        token_contract = web3.eth.contract(address=web3.to_checksum_address(ctraddr), abi=token_abi)
-        nametkn = token_contract.functions.name().call()
-        gasAmount = token_contract.functions.transfer(recipient, totalamount).estimate_gas({
-            'chainId': chainId,
-            'from': sender,
-            'gasPrice': gasPrice,
-            'nonce': nonce
-        })
-
-        token_tx = token_contract.functions.transfer(recipient, totalamount).build_transaction({
-            'chainId': chainId,
-            'from': sender,
-            'gasPrice': gasPrice,
-            'gas': gasAmount,
-            'nonce': nonce
-        })
-        
-        #sign & send the transaction
-        tx_hash = web3.eth.send_raw_transaction(web3.eth.account.sign_transaction(token_tx, key).rawTransaction)
-        #get transaction hash
-        print(f'Processing Send {amount} {nametkn} From {sender} To {recipient} ...')
-        web3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f'Send {amount} {nametkn} From {sender} To {recipient} Success!')
-        print(f'TX-ID : {str(web3.to_hex(tx_hash))}')
-    except Exception as e:
-        print(f'Error : {e}')
-        pass
-
-def writeContract(sender, key, ctraddr):
-    try:
-        getGasPrice = web3.from_wei(int(get_base_gas_price()), 'gwei')
-        max_priority_fee = (5*getGasPrice)/100
-        max_fee = getGasPrice + max_priority_fee
-        gasPrice = web3.to_wei(max_fee, 'gwei')
-        nonce = web3.eth.get_transaction_count(sender)
-        msg_contract = web3.eth.contract(address=web3.to_checksum_address(ctraddr), abi=msg_abi)
-        gasAmount = msg_contract.functions.writeMessage("test").estimate_gas({
-            'chainId': chainId,
-            'from': sender,
-            'gasPrice': gasPrice,
-            'nonce': nonce
-        })
-
-        msg_tx = msg_contract.functions.writeMessage("test").build_transaction({
-            'chainId': chainId,
-            'from': sender,
-            'gasPrice': gasPrice,
-            'gas': gasAmount,
-            'nonce': nonce
-        })
-        
-        #sign & send the transaction
-        tx_hash = web3.eth.send_raw_transaction(web3.eth.account.sign_transaction(msg_tx, key).rawTransaction)
-        #get transaction hash
-        print(f'Processing Interaction On Contract {ctraddr} From {sender} ...')
-        web3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f'Interaction On Contract {ctraddr} From {sender} Success!')
-        print(f'TX-ID : {str(web3.to_hex(tx_hash))}')
-    except Exception as e:
-        print(f'Error : {e}')
-        pass
-
-def deployContract(sender, key):
-    try:
-        getGasPrice = web3.from_wei(int(get_base_gas_price()), 'gwei')
-        max_priority_fee = (5*getGasPrice)/100
-        max_fee = getGasPrice + max_priority_fee
-        gasPrice = web3.to_wei(max_fee, 'gwei')
-        nonce = web3.eth.get_transaction_count(sender)
-        gasAmount = web3.eth.estimate_gas({
-            'chainId': chainId,
-            'from': sender,
-            'data': datadeploy,
-            'gasPrice': gasPrice,
-            'nonce': nonce
-        })
-
-        deploy_tx = {
-            'chainId': chainId,
-            'from': sender,
-            'data': datadeploy,
-            'gasPrice': gasPrice,
-            'gas': gasAmount,
-            'nonce': nonce
-        }
-        
-        #sign & send the transaction
-        tx_hash = web3.eth.send_raw_transaction(web3.eth.account.sign_transaction(deploy_tx, key).rawTransaction)
-        #get transaction hash
-        print(f'Processing Deploy Contract From {sender} ...')
-        transaction_receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f'Deploy Contract Success From {sender} Success!')
-        print(f'TX-ID & Contract Address : {str(web3.to_hex(tx_hash))} & {transaction_receipt.contractAddress}')
-        return transaction_receipt.contractAddress
-    except Exception as e:
-        print(f'Error : {e}')
-        pass
-
-def sendNative(sender, key, amount, recipient):
-    try:
-        getGasPrice = web3.from_wei(int(get_base_gas_price()), 'gwei')
-        max_priority_fee = (10*getGasPrice)/100
-        max_fee = getGasPrice + max_priority_fee
-        gasPrice = web3.to_wei(max_fee, 'gwei')
-        nonce = web3.eth.get_transaction_count(sender)
-        totalamount = web3.to_wei(amount, 'ether')
-        gasAmount = web3.eth.estimate_gas({
+        gas_price = int(get_base_gas_price() * 1.1)
+        tx = {
             'chainId': chainId,
             'from': sender,
             'to': recipient,
-            'value': totalamount,
-            'gasPrice': gasPrice,
-            'nonce': nonce
-        })
+            'value': web3.to_wei(amount, 'ether'),
+            'nonce': web3.eth.get_transaction_count(sender),
+            'gasPrice': gas_price,
+        }
+        tx['gas'] = web3.eth.estimate_gas({k: tx[k] for k in ['from', 'to', 'value']})
+        tx_hash = sign_and_send(tx, key)
+        web3.eth.wait_for_transaction_receipt(tx_hash)
+        print(f"{GREEN}Sent {amount} ETH to {recipient} — TX: {web3.to_hex(tx_hash)}{RESET}")
+    except Exception as e:
+        print(f"{RED}Native TX error: {e}{RESET}")
 
-        native_tx = {
+def deploy_contract(sender, key):
+    try:
+        gas_price = int(get_base_gas_price() * 1.1)
+        tx = {
             'chainId': chainId,
             'from': sender,
-            'to': recipient,
-            'value': totalamount,
-            'gasPrice': gasPrice,
-            'gas': gasAmount,
-            'nonce': nonce
+            'data': datadeploy,
+            'nonce': web3.eth.get_transaction_count(sender),
+            'gasPrice': gas_price,
         }
-        
-        #sign & send the transaction
-        tx_hash = web3.eth.send_raw_transaction(web3.eth.account.sign_transaction(native_tx, key).rawTransaction)
-        #get transaction hash
-        print(f'Processing Send {amount} Native From {sender} To {recipient} ...')
-        web3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f'Send {amount} Native From {sender} To {recipient} Success!')
-        print(f'TX-ID : {str(web3.to_hex(tx_hash))}')
+        tx['gas'] = web3.eth.estimate_gas({'from': sender, 'data': datadeploy})
+        tx_hash = sign_and_send(tx, key)
+        receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+        print(f"{CYAN}Contract deployed: {receipt.contractAddress} — TX: {web3.to_hex(tx_hash)}{RESET}")
+        return receipt.contractAddress
     except Exception as e:
-        print(f'Error : {e}')
-        pass
-        
-def get_random_address_from_block(block_number=None):
-    try:
-        # If no block number is provided, get the latest block
-        if block_number is None:
-            block = web3.eth.get_block('latest', full_transactions=True)
-        else:
-            block = web3.eth.get_block(block_number, full_transactions=True)
-
-        # Collect addresses involved in transactions (both from and to addresses)
-        addresses = set()  # Use a set to avoid duplicates
-        
-        for tx in block['transactions']:
-            sender = tx['from']
-            recipient = tx['to']
-            
-            addresses.add(sender)
-            if recipient:
-                addresses.add(recipient)
-        
-        if not addresses:
-            print("No addresses found in this block.")
-            return None
-
-        # Randomly select an address from the set of addresses
-        random_address = random.choice(list(addresses))
-        #print(f"Random address from block {block['number']}: {random_address}")
-        return random_address
-    
-    except Exception as e:
-        print(f"Error while fetching block data: {e}")
+        print(f"{RED}Contract Deploy Error: {e}{RESET}")
         return None
 
+def write_contract(sender, key, ctraddr):
+    try:
+        gas_price = int(get_base_gas_price() * 1.1)
+        contract = web3.eth.contract(address=ctraddr, abi=msg_abi)
+        tx = contract.functions.writeMessage("test").build_transaction({
+            'chainId': chainId,
+            'from': sender,
+            'nonce': web3.eth.get_transaction_count(sender),
+            'gasPrice': gas_price
+        })
+        tx['gas'] = contract.functions.writeMessage("test").estimate_gas({'from': sender})
+        tx_hash = sign_and_send(tx, key)
+        web3.eth.wait_for_transaction_receipt(tx_hash)
+        print(f"{CYAN}Interaction with contract {ctraddr} successful — TX: {web3.to_hex(tx_hash)}{RESET}")
+    except Exception as e:
+        print(f"{RED}Contract Interaction Error: {e}{RESET}")
+
+def send_token(sender, key, ctraddr, amount, recipient):
+    try:
+        contract = web3.eth.contract(address=ctraddr, abi=token_abi)
+        gas_price = int(get_base_gas_price() * 1.05)
+        decimals = contract.functions.decimals().call()
+        amt = int(amount * (10 ** decimals))
+        tx = contract.functions.transfer(recipient, amt).build_transaction({
+            'chainId': chainId,
+            'from': sender,
+            'nonce': web3.eth.get_transaction_count(sender),
+            'gasPrice': gas_price
+        })
+        tx['gas'] = contract.functions.transfer(recipient, amt).estimate_gas({'from': sender})
+        tx_hash = sign_and_send(tx, key)
+        web3.eth.wait_for_transaction_receipt(tx_hash)
+        name = contract.functions.name().call()
+        print(f"{GREEN}Sent {amount} {name} to {recipient} — TX: {web3.to_hex(tx_hash)}{RESET}")
+    except Exception as e:
+        print(f"{RED}Token Send Error: {e}{RESET}")
+
+def get_random_address():
+    try:
+        block = web3.eth.get_block('latest', full_transactions=True)
+        addrs = {tx['from'] for tx in block.transactions}
+        addrs |= {tx['to'] for tx in block.transactions if tx['to']}
+        return random.choice(list(addrs))
+    except:
+        return web3.to_checksum_address("0x000000000000000000000000000000000000dead")
+
+# === Input Configuration ===
 amountmin = float(input('Min Send Amount : '))
 amountmax = float(input('Max Send Amount : '))
-tknaddr = web3.to_checksum_address(input('Input Token Address : '))
-print(f'')         
+token_address = web3.to_checksum_address(input('Input Token Address : '))
+print()
+
+# === Main Loop ===
 def sendTX():
     try:
-        while True:
-            with open('pvkeylist.txt', 'r') as file:
-                local_data = file.read().splitlines()
-
-                # Check if the file is empty
-                if not local_data:
-                    print("Notice: 'pvkeylist.txt' is empty. Exiting...")
-                    sys.exit(1)  # Exit the program with a non-zero status
-
-                # Process each private key in the list
-                for pvkeylist in local_data:
-                    try:
-                        # Check if the private key is valid
-                        sender = web3.eth.account.from_key(pvkeylist)
-                    except ValueError:
-                        print(f"Notice: Invalid private key format. Exiting...")
-                        sys.exit(1)  # Exit the program with a non-zero status
-                    
-                    sender = web3.eth.account.from_key(pvkeylist)
-                    recipient = web3.to_checksum_address(get_random_address_from_block())
-                    amountrandom = random.uniform(amountmin, amountmax)
-                    sendNative(sender.address, sender.key, amountrandom, recipient)
-                    print(f'')
-                    ctraddr = deployContract(sender.address, sender.key)
-                    print(f'')
-                    writeContract(sender.address, sender.key, ctraddr)
-                    print(f'')
-                    sendToken(sender.address, sender.key, tknaddr, amountrandom, recipient)
-                    print(f'')
+        with open('pvkeylist.txt', 'r') as f:
+            keys = [k.strip() for k in f.readlines() if k.strip()]
+        if not keys:
+            print("No keys in pvkeylist.txt")
+            return
+        for key in keys:
+            acct = web3.eth.account.from_key(key)
+            sender = acct.address
+            recipient = get_random_address()
+            amt = random.uniform(amountmin, amountmax)
+            send_native(sender, key, amt, recipient)
+            ctr = deploy_contract(sender, key)
+            if ctr:
+                write_contract(sender, key, ctr)
+                send_token(sender, key, token_address, amt, recipient)
+            print()
+            time.sleep(5)
     except Exception as e:
-        print(f'Error : {e}')
-        pass
-        
+        print(f"{RED}Main Loop Error: {e}{RESET}")
+
 sendTX()
