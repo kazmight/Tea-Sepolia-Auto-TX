@@ -32,8 +32,10 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
    ```bash
    sudo apt update && sudo apt upgrade -y
    sudo apt install software-properties-common -y
-   add-apt-repository ppa:deadsnakes/ppa
-   sudo apt install python3.10
+   sudo add-apt-repository ppa:deadsnakes/ppa -y
+   sudo apt update
+   sudo apt install python3.10 python3.10-venv python3.10-dev -y
+
 
 3. Membuat Virtual Environment :
    ```bash
@@ -42,6 +44,7 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
 
 4. Dependency Installation :
    ```bash
+   pip install web3 python-dotenv
    pip install -r requirements.txt
  
 5. Execution Script :
