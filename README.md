@@ -23,12 +23,8 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
 
 ## ⚙️ Instalasi
 
-1. Clone the Repository :
-   ```bash
-   git clone https://github.com/kazmight/Tea-Sepolia-Auto-TX.git
-   cd Tea-Sepolia-Auto-TX
 
-2. Install Python 3.10 :
+1. Install Python 3.10 :
    ```bash
    sudo apt update && sudo apt upgrade -y
    sudo apt install software-properties-common -y
@@ -37,17 +33,17 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
    sudo apt install python3.10 python3.10-venv python3.10-dev -y
 
 
-3. Membuat Virtual Environment :
+2. Membuat Virtual Environment :
    ```bash
    python3 -m venv venv
    source venv/bin/activate
 
-4. Dependency Installation :
+3. Dependency Installation :
    ```bash
    pip install web3 python-dotenv
 
  
-5. Execution Script :
+4. Execution Script :
    ```bash
    pthon3 Autotransaction.py
    or 
@@ -60,5 +56,7 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
 **Max Send Amount (e.g., 0.01)**
 
 **Token Address (Paste Contract Addrres token yang udah kalian deploy)**
+
+**privatekey.txt (isi dengan privatekey kalian)**
 
 **Number of Transactions (e.g., 5)**
