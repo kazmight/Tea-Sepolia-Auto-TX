@@ -24,6 +24,12 @@ print(f'')
 web3 = Web3(Web3.HTTPProvider("https://tea-sepolia.g.alchemy.com/public"))
 chainId = web3.eth.chain_id
 
+# if  web3.is_connected() == True:
+    # print("Web3 Connected...\n")
+# else:
+    # print("Error Connecting Please Try Again Exit...")
+    # exit()
+
 datadeploy = "0x6080604052348015600f57600080fd5b5061036a8061001f6000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c8063031d5d011461003b578063b588bfad14610059575b600080fd5b61004361006e565b6040516100509190610112565b60405180910390f35b61006c610067366004610161565b610100565b005b60606000805461007d906101d3565b80601f01602080910402602001604051908101604052809291908181526020018280546100a9906101d3565b80156100f65780601f106100cb576101008083540402835291602001916100f6565b820191906000526020600020905b8154815290600101906020018083116100d957829003601f168201915b5050505050905090565b600061010d828483610273565b505050565b60006020808352835180602085015260005b8181101561014057858101830151858201604001528201610124565b506000604082860101526040601f19601f8301168501019250505092915050565b6000806020838503121561017457600080fd5b823567ffffffffffffffff8082111561018c57600080fd5b818501915085601f8301126101a057600080fd5b8135818111156101af57600080fd5b8660208285010111156101c157600080fd5b60209290920196919550909350505050565b600181811c908216806101e757607f821691505b60208210810361020757634e487b7160e01b600052602260045260246000fd5b50919050565b634e487b7160e01b600052604160045260246000fd5b601f82111561010d576000816000526020600020601f850160051c8101602086101561024c5750805b601f850160051c820191505b8181101561026b57828155600101610258565b505050505050565b67ffffffffffffffff83111561028b5761028b61020d565b61029f8361029983546101d3565b83610223565b6000601f8411600181146102d357600085156102bb5750838201355b600019600387901b1c1916600186901b17835561032d565b600083815260209020601f19861690835b8281101561030457868501358255602094850194600190920191016102e4565b50868210156103215760001960f88860031b161c19848701351681555b505060018560011b0183555b505050505056fea264697066735822122055624fd2cb38f0bfa640ac81ca40f9a0bc410d13e12db84e10a0e36edf4217c664736f6c63430008190033"
 
 msg_abi = json.loads('[{"inputs": [{"internalType": "string","name": "newMessage","type": "string"}],"name": "writeMessage","outputs": [],"stateMutability": "nonpayable","type": "function"}]')
@@ -214,6 +220,7 @@ def get_random_address_from_block(block_number=None):
 
         # Randomly select an address from the set of addresses
         random_address = random.choice(list(addresses))
+        #print(f"Random address from block {block['number']}: {random_address}")
         return random_address
     
     except Exception as e:
@@ -223,38 +230,30 @@ def get_random_address_from_block(block_number=None):
 amountmin = float(input('Min Send Amount : '))
 amountmax = float(input('Max Send Amount : '))
 tknaddr = web3.to_checksum_address(input('Input Token Address : '))
-tx_count = int(input('Number of transactions to execute: '))
 print(f'')         
-
 def sendTX():
     try:
-        executed_txs = 0
-        while executed_txs < tx_count:
+        while True:
             with open('pvkeylist.txt', 'r') as file:
                 local_data = file.read().splitlines()
 
                 # Check if the file is empty
                 if not local_data:
                     print("Notice: 'pvkeylist.txt' is empty. Exiting...")
-                    sys.exit(1)
+                    sys.exit(1)  # Exit the program with a non-zero status
 
                 # Process each private key in the list
                 for pvkeylist in local_data:
                     try:
-                        if executed_txs >= tx_count:
-                            break
-                            
                         # Check if the private key is valid
                         sender = web3.eth.account.from_key(pvkeylist)
                     except ValueError:
                         print(f"Notice: Invalid private key format. Exiting...")
-                        sys.exit(1)
+                        sys.exit(1)  # Exit the program with a non-zero status
                     
                     sender = web3.eth.account.from_key(pvkeylist)
                     recipient = web3.to_checksum_address(get_random_address_from_block())
                     amountrandom = random.uniform(amountmin, amountmax)
-                    
-                    print(f'\n=== Transaction {executed_txs + 1} of {tx_count} ===')
                     sendNative(sender.address, sender.key, amountrandom, recipient)
                     print(f'')
                     ctraddr = deployContract(sender.address, sender.key)
@@ -263,12 +262,6 @@ def sendTX():
                     print(f'')
                     sendToken(sender.address, sender.key, tknaddr, amountrandom, recipient)
                     print(f'')
-                    
-                    executed_txs += 1
-                    
-                    # Add delay between transactions to avoid nonce issues
-                    time.sleep(5)
-                    
     except Exception as e:
         print(f'Error : {e}')
         pass
