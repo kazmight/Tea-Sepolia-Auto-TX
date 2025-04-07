@@ -3,6 +3,7 @@ import json
 import random
 import secrets
 import time
+import sys
 
 # Colors for terminal output
 GREEN, YELLOW, RED, CYAN, MAGENTA, RESET = '\033[92m', '\033[93m', '\033[91m', '\033[96m', '\033[95m', '\033[0m'
@@ -65,11 +66,12 @@ def sendToken(sender, key, ctraddr, amount, recipient):
         #get transaction hash
         print(f'Processing Send {amount} {nametkn} From {sender} To {recipient} ...')
         web3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f'Send {amount} {nametkn} From {sender} To {recipient} Success!')
-        print(f'TX-ID : {str(web3.to_hex(tx_hash))}')
+        print(f'{GREEN}Send {amount} {nametkn} From {sender} To {recipient} Success!{RESET}')
+        print(f'{GREEN}TX-ID : {str(web3.to_hex(tx_hash))}{RESET}')
+        return True
     except Exception as e:
-        print(f'Error : {e}')
-        pass
+        print(f'{RED}Error sending token: {e}{RESET}')
+        return False
 
 def writeContract(sender, key, ctraddr):
     try:
@@ -99,11 +101,12 @@ def writeContract(sender, key, ctraddr):
         #get transaction hash
         print(f'Processing Interaction On Contract {ctraddr} From {sender} ...')
         web3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f'Interaction On Contract {ctraddr} From {sender} Success!')
-        print(f'TX-ID : {str(web3.to_hex(tx_hash))}')
+        print(f'{GREEN}Interaction On Contract {ctraddr} From {sender} Success!{RESET}')
+        print(f'{GREEN}TX-ID : {str(web3.to_hex(tx_hash))}{RESET}')
+        return True
     except Exception as e:
-        print(f'Error : {e}')
-        pass
+        print(f'{RED}Error interacting with contract: {e}{RESET}')
+        return False
 
 def deployContract(sender, key):
     try:
@@ -134,12 +137,12 @@ def deployContract(sender, key):
         #get transaction hash
         print(f'Processing Deploy Contract From {sender} ...')
         transaction_receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f'Deploy Contract Success From {sender} Success!')
-        print(f'TX-ID & Contract Address : {str(web3.to_hex(tx_hash))} & {transaction_receipt.contractAddress}')
-        return transaction_receipt.contractAddress
+        print(f'{GREEN}Deploy Contract Success From {sender} Success!{RESET}')
+        print(f'{GREEN}TX-ID & Contract Address : {str(web3.to_hex(tx_hash))} & {transaction_receipt.contractAddress}{RESET}')
+        return transaction_receipt.contractAddress, True
     except Exception as e:
-        print(f'Error : {e}')
-        pass
+        print(f'{RED}Error deploying contract: {e}{RESET}')
+        return None, False
 
 def sendNative(sender, key, amount, recipient):
     try:
@@ -173,11 +176,12 @@ def sendNative(sender, key, amount, recipient):
         #get transaction hash
         print(f'Processing Send {amount} Native From {sender} To {recipient} ...')
         web3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f'Send {amount} Native From {sender} To {recipient} Success!')
-        print(f'TX-ID : {str(web3.to_hex(tx_hash))}')
+        print(f'{GREEN}Send {amount} Native From {sender} To {recipient} Success!{RESET}')
+        print(f'{GREEN}TX-ID : {str(web3.to_hex(tx_hash))}{RESET}')
+        return True
     except Exception as e:
-        print(f'Error : {e}')
-        pass
+        print(f'{RED}Error sending native token: {e}{RESET}')
+        return False
         
 def get_random_address_from_block(block_number=None):
     try:
@@ -199,55 +203,90 @@ def get_random_address_from_block(block_number=None):
                 addresses.add(recipient)
         
         if not addresses:
-            print("No addresses found in this block.")
+            print(f"{YELLOW}No addresses found in this block.{RESET}")
             return None
 
         # Randomly select an address from the set of addresses
         random_address = random.choice(list(addresses))
-        #print(f"Random address from block {block['number']}: {random_address}")
         return random_address
     
     except Exception as e:
-        print(f"Error while fetching block data: {e}")
+        print(f"{RED}Error while fetching block data: {e}{RESET}")
         return None
 
+# Get user inputs
 amountmin = float(input('Min Send Amount : '))
 amountmax = float(input('Max Send Amount : '))
 tknaddr = web3.to_checksum_address(input('Input Token Address : '))
-print(f'')         
+total_runs = int(input('How many transactions to run? (e.g., 100) : '))
+print(f'')
+
 def sendTX():
     try:
-        while True:
-            with open('pvkeylist.txt', 'r') as file:
-                local_data = file.read().splitlines()
+        with open('pvkeylist.txt', 'r') as file:
+            local_data = file.read().splitlines()
 
-                # Check if the file is empty
-                if not local_data:
-                    print("Notice: 'pvkeylist.txt' is empty. Exiting...")
-                    sys.exit(1)  # Exit the program with a non-zero status
+            # Check if the file is empty
+            if not local_data:
+                print(f"{RED}Notice: 'pvkeylist.txt' is empty. Exiting...{RESET}")
+                sys.exit(1)
 
-                # Process each private key in the list
-                for pvkeylist in local_data:
-                    try:
-                        # Check if the private key is valid
-                        sender = web3.eth.account.from_key(pvkeylist)
-                    except ValueError:
-                        print(f"Notice: Invalid private key format. Exiting...")
-                        sys.exit(1)  # Exit the program with a non-zero status
+            # Process each private key in the list
+            for pvkeylist in local_data:
+                try:
+                    # Check if the private key is valid
+                    sender = web3.eth.account.from_key(pvkeylist)
+                except ValueError:
+                    print(f"{RED}Notice: Invalid private key format. Exiting...{RESET}")
+                    sys.exit(1)
+                
+                # Initialize counters for this account
+                successful_txs = 0
+                failed_txs = 0
+                
+                # Run transactions for this account
+                for run in range(1, total_runs + 1):
+                    print(f'\n{MAGENTA}=== Transaction {run} of {total_runs} ==={RESET}')
                     
                     sender = web3.eth.account.from_key(pvkeylist)
                     recipient = web3.to_checksum_address(get_random_address_from_block())
                     amountrandom = random.uniform(amountmin, amountmax)
-                    sendNative(sender.address, sender.key, amountrandom, recipient)
+                    
+                    # Send Native
+                    native_success = sendNative(sender.address, sender.key, amountrandom, recipient)
                     print(f'')
-                    ctraddr = deployContract(sender.address, sender.key)
+                    
+                    # Deploy Contract
+                    ctraddr, deploy_success = deployContract(sender.address, sender.key)
                     print(f'')
-                    writeContract(sender.address, sender.key, ctraddr)
+                    
+                    # Write Contract if deployment was successful
+                    write_success = False
+                    if deploy_success and ctraddr:
+                        write_success = writeContract(sender.address, sender.key, ctraddr)
+                        print(f'')
+                    
+                    # Send Token
+                    token_success = sendToken(sender.address, sender.key, tknaddr, amountrandom, recipient)
                     print(f'')
-                    sendToken(sender.address, sender.key, tknaddr, amountrandom, recipient)
-                    print(f'')
+                    
+                    # Update counters
+                    if native_success and deploy_success and write_success and token_success:
+                        successful_txs += 1
+                    else:
+                        failed_txs += 1
+                    
+                    # Add delay between transactions to avoid nonce issues
+                    time.sleep(3)
+                
+                # Print summary for this account
+                print(f'\n{CYAN}=== Account Summary ==={RESET}')
+                print(f'{GREEN}Successful transactions: {successful_txs}{RESET}')
+                print(f'{RED}Failed transactions: {failed_txs}{RESET}')
+                print(f'{YELLOW}Total transactions attempted: {total_runs}{RESET}\n')
+                
     except Exception as e:
-        print(f'Error : {e}')
+        print(f'{RED}Error in main loop: {e}{RESET}')
         pass
         
 sendTX()
