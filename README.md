@@ -43,7 +43,7 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
 
 4. Execution Script :
    ```bash
-   pthon3 Autotransaction.py
+   python3 Autotransaction.py
    or 
    python Autotransaction.py
 
