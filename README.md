@@ -57,4 +57,3 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
 
 **privatekey.txt (isi dengan privatekey kalian)**
 
-**Number of Transactions (e.g., 5)**
