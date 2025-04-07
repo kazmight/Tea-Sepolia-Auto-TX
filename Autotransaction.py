@@ -1,12 +1,27 @@
 from web3 import Web3, HTTPProvider
 import json
 import random
-import secrets
 import time
 import sys
+from web3.exceptions import ContractLogicError
 
 # Colors for terminal output
-GREEN, YELLOW, RED, CYAN, MAGENTA, RESET = '\033[92m', '\033[93m', '\033[91m', '\033[96m', '\033[95m', '\033[0m'
+GREEN = '\033[92m'
+YELLOW = '\033[93m'
+RED = '\033[91m'
+CYAN = '\033[96m'
+MAGENTA = '\033[95m'
+RESET = '\033[0m'
+
+# Transaction types mapping
+TRANSACTION_TYPES = {
+    'native': 'Native Transfer',
+    'deploy': 'Contract Deployment',
+    'interact': 'Contract Interaction',
+    'token': 'Token Transfer'
+}
+
+# [Rest of your existing imports and setup code...]
 
 # Intro
 print(f'{RED}H{YELLOW}e{GREEN}l{YELLOW}l{RED}o {CYAN}E{MAGENTA}V{GREEN}M {YELLOW}T{RED}e{CYAN}a {MAGENTA}S{GREEN}e{YELLOW}p{RED}o{CYAN}l{MAGENTA}i{YELLOW}a {GREEN}T{RED}e{YELLOW}s{CYAN}t{MAGENTA}n{GREEN}e{YELLOW}t {RED}B{CYAN}y {MAGENTA}I{YELLOW}N{GREEN}V{RED}I{YELLOW}C{CYAN}T{MAGENTA}U{YELLOW}S {GREEN}L{RED}A{YELLOW}B{CYAN}S{RESET}')
@@ -28,51 +43,82 @@ token_abi = json.loads('[{"inputs":[],"stateMutability":"nonpayable","type":"con
 
 def get_base_gas_price():
     """Retrieve the base gas price from the latest block."""
-    latest_block = web3.eth.get_block('latest')
-    base_fee_per_gas = latest_block.get('baseFeePerGas', None)
-
-    if base_fee_per_gas is None:
-        raise ValueError("Base fee per gas not available in this block.")
-
-    return base_fee_per_gas
-
-def sendToken(sender, key, ctraddr, amount, recipient):
     try:
-        getGasPrice = web3.from_wei(int(get_base_gas_price()), 'gwei')
-        max_priority_fee = (5*getGasPrice)/100
-        max_fee = getGasPrice + max_priority_fee
-        gasPrice = web3.to_wei(max_fee, 'gwei')
-        nonce = web3.eth.get_transaction_count(sender)
-        totalamount = web3.to_wei(amount, 'ether')
-        token_contract = web3.eth.contract(address=web3.to_checksum_address(ctraddr), abi=token_abi)
-        nametkn = token_contract.functions.name().call()
-        gasAmount = token_contract.functions.transfer(recipient, totalamount).estimate_gas({
-            'chainId': chainId,
-            'from': sender,
-            'gasPrice': gasPrice,
-            'nonce': nonce
-        })
-
-        token_tx = token_contract.functions.transfer(recipient, totalamount).build_transaction({
-            'chainId': chainId,
-            'from': sender,
-            'gasPrice': gasPrice,
-            'gas': gasAmount,
-            'nonce': nonce
-        })
-        
-        #sign & send the transaction
-        tx_hash = web3.eth.send_raw_transaction(web3.eth.account.sign_transaction(token_tx, key).rawTransaction)
-        #get transaction hash
-        print(f'Processing Send {amount} {nametkn} From {sender} To {recipient} ...')
-        web3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f'{GREEN}Send {amount} {nametkn} From {sender} To {recipient} Success!{RESET}')
-        print(f'{GREEN}TX-ID : {str(web3.to_hex(tx_hash))}{RESET}')
-        return True
+        latest_block = web3.eth.get_block('latest')
+        return latest_block['baseFeePerGas']
     except Exception as e:
-        print(f'{RED}Error sending token: {e}{RESET}')
-        return False
+        print(f"{YELLOW}Error getting base fee: {e}{RESET}")
+        return web3.to_wei(30, 'gwei')  # Fallback base fee
 
+def get_gas_parameters():
+    """Get safe gas parameters with proper validation"""
+    try:
+        base_fee = get_base_gas_price()
+        max_priority = int(base_fee * 0.1)  # 10% of base fee
+        max_fee = base_fee + max_priority
+        return {
+            'maxFeePerGas': min(max_fee, web3.to_wei(150, 'gwei')),  # Cap at 150 gwei
+            'maxPriorityFeePerGas': min(max_priority, web3.to_wei(2, 'gwei')),  # Cap at 2 gwei
+            'gas': 21000  # Default gas for simple transfers
+        }
+    except Exception as e:
+        print(f"{YELLOW}Using fallback gas parameters: {e}{RESET}")
+        return {
+            'maxFeePerGas': web3.to_wei(50, 'gwei'),
+            'maxPriorityFeePerGas': web3.to_wei(1, 'gwei'),
+            'gas': 21000
+        }
+
+def sendNative(sender, key, amount, recipient):
+    try:
+        # Validate inputs
+        if not web3.is_address(recipient):
+            print(f"{RED}Invalid recipient address{RESET}")
+            return False
+
+        # Get gas parameters
+        gas_params = get_gas_parameters()
+        
+        # Convert amount
+        amount_wei = web3.to_wei(amount, 'ether')
+        
+        # Build transaction
+        tx = {
+            'chainId': chainId,
+            'to': recipient,
+            'value': amount_wei,
+            'nonce': web3.eth.get_transaction_count(sender),
+            **gas_params
+        }
+
+        # Check balance
+        balance = web3.eth.get_balance(sender)
+        required = amount_wei + (tx['gas'] * tx['maxFeePerGas'])
+        if balance < required:
+            print(f"{RED}Insufficient balance: Need {web3.from_wei(required, 'ether'):.6f} ETH, has {web3.from_wei(balance, 'ether'):.6f} ETH{RESET}")
+            return False
+
+        # Sign and send
+        signed = web3.eth.account.sign_transaction(tx, key)
+        raw_tx = signed.rawTransaction if hasattr(signed, 'rawTransaction') else signed.raw_transaction
+        tx_hash = web3.eth.send_raw_transaction(raw_tx)
+        
+        print(f"{CYAN}Sending {amount:.6f} ETH...{RESET}")
+        
+        # Wait for receipt
+        receipt = web3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        
+        if receipt.status == 1:
+            print(f"{GREEN}Success! TX: {web3.to_hex(tx_hash)}{RESET}")
+            return True
+        else:
+            print(f"{RED}Transaction failed (status 0){RESET}")
+            return False
+            
+    except Exception as e:
+        print(f"{RED}Error: {type(e).__name__}: {e}{RESET}")
+        return False
+        
 def writeContract(sender, key, ctraddr):
     try:
         getGasPrice = web3.from_wei(int(get_base_gas_price()), 'gwei')
@@ -110,77 +156,98 @@ def writeContract(sender, key, ctraddr):
 
 def deployContract(sender, key):
     try:
-        getGasPrice = web3.from_wei(int(get_base_gas_price()), 'gwei')
-        max_priority_fee = (5*getGasPrice)/100
-        max_fee = getGasPrice + max_priority_fee
-        gasPrice = web3.to_wei(max_fee, 'gwei')
-        nonce = web3.eth.get_transaction_count(sender)
-        gasAmount = web3.eth.estimate_gas({
-            'chainId': chainId,
-            'from': sender,
-            'data': datadeploy,
-            'gasPrice': gasPrice,
-            'nonce': nonce
-        })
-
-        deploy_tx = {
-            'chainId': chainId,
-            'from': sender,
-            'data': datadeploy,
-            'gasPrice': gasPrice,
-            'gas': gasAmount,
-            'nonce': nonce
-        }
+        # Get gas parameters with higher gas limit for deployment
+        gas_params = get_gas_parameters()
+        gas_params['gas'] = 2000000  # Higher gas limit for deployments
         
-        #sign & send the transaction
-        tx_hash = web3.eth.send_raw_transaction(web3.eth.account.sign_transaction(deploy_tx, key).rawTransaction)
-        #get transaction hash
-        print(f'Processing Deploy Contract From {sender} ...')
-        transaction_receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f'{GREEN}Deploy Contract Success From {sender} Success!{RESET}')
-        print(f'{GREEN}TX-ID & Contract Address : {str(web3.to_hex(tx_hash))} & {transaction_receipt.contractAddress}{RESET}')
-        return transaction_receipt.contractAddress, True
+        # Build transaction
+        tx = {
+            'chainId': chainId,
+            'from': sender,
+            'data': datadeploy,
+            'nonce': web3.eth.get_transaction_count(sender),
+            **gas_params
+        }
+
+        # Check balance
+        balance = web3.eth.get_balance(sender)
+        required = tx['gas'] * tx['maxFeePerGas']
+        if balance < required:
+            print(f"{RED}Insufficient balance for deployment: Need {web3.from_wei(required, 'ether'):.6f} ETH{RESET}")
+            return None, False
+
+        # Sign and send
+        signed = web3.eth.account.sign_transaction(tx, key)
+        raw_tx = signed.rawTransaction if hasattr(signed, 'rawTransaction') else signed.raw_transaction
+        tx_hash = web3.eth.send_raw_transaction(raw_tx)
+        
+        print(f"{CYAN}Deploying contract...{RESET}")
+        
+        # Wait for receipt with longer timeout
+        receipt = web3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
+        
+        if receipt.status == 1:
+            contract_address = receipt.contractAddress
+            print(f"{GREEN}Deployment successful! Contract: {contract_address}{RESET}")
+            print(f"{GREEN}TX: {web3.to_hex(tx_hash)}{RESET}")
+            return contract_address, True
+        else:
+            print(f"{RED}Contract deployment failed (status 0){RESET}")
+            return None, False
+            
     except Exception as e:
-        print(f'{RED}Error deploying contract: {e}{RESET}')
+        print(f"{RED}Deployment error: {type(e).__name__}: {e}{RESET}")
         return None, False
+
 
 def sendNative(sender, key, amount, recipient):
     try:
-        getGasPrice = web3.from_wei(int(get_base_gas_price()), 'gwei')
-        max_priority_fee = (10*getGasPrice)/100
-        max_fee = getGasPrice + max_priority_fee
-        gasPrice = web3.to_wei(max_fee, 'gwei')
-        nonce = web3.eth.get_transaction_count(sender)
-        totalamount = web3.to_wei(amount, 'ether')
-        gasAmount = web3.eth.estimate_gas({
-            'chainId': chainId,
-            'from': sender,
-            'to': recipient,
-            'value': totalamount,
-            'gasPrice': gasPrice,
-            'nonce': nonce
-        })
+        # Validate inputs
+        if not web3.is_address(recipient):
+            print(f"{RED}Invalid recipient address{RESET}")
+            return False
 
-        native_tx = {
-            'chainId': chainId,
-            'from': sender,
-            'to': recipient,
-            'value': totalamount,
-            'gasPrice': gasPrice,
-            'gas': gasAmount,
-            'nonce': nonce
-        }
+        # Get gas parameters
+        gas_params = get_gas_parameters()
         
-        #sign & send the transaction
-        tx_hash = web3.eth.send_raw_transaction(web3.eth.account.sign_transaction(native_tx, key).rawTransaction)
-        #get transaction hash
-        print(f'Processing Send {amount} Native From {sender} To {recipient} ...')
-        web3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f'{GREEN}Send {amount} Native From {sender} To {recipient} Success!{RESET}')
-        print(f'{GREEN}TX-ID : {str(web3.to_hex(tx_hash))}{RESET}')
-        return True
+        # Convert amount
+        amount_wei = web3.to_wei(amount, 'ether')
+        
+        # Build transaction
+        tx = {
+            'chainId': chainId,
+            'to': recipient,
+            'value': amount_wei,
+            'nonce': web3.eth.get_transaction_count(sender),
+            **gas_params
+        }
+
+        # Check balance
+        balance = web3.eth.get_balance(sender)
+        required = amount_wei + (tx['gas'] * tx['maxFeePerGas'])
+        if balance < required:
+            print(f"{RED}Insufficient balance: Need {web3.from_wei(required, 'ether'):.6f} ETH, has {web3.from_wei(balance, 'ether'):.6f} ETH{RESET}")
+            return False
+
+        # Sign and send
+        signed = web3.eth.account.sign_transaction(tx, key)
+        raw_tx = signed.rawTransaction if hasattr(signed, 'rawTransaction') else signed.raw_transaction
+        tx_hash = web3.eth.send_raw_transaction(raw_tx)
+        
+        print(f"{CYAN}Sending {amount:.6f} ETH...{RESET}")
+        
+        # Wait for receipt
+        receipt = web3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        
+        if receipt.status == 1:
+            print(f"{GREEN}Success! TX: {web3.to_hex(tx_hash)}{RESET}")
+            return True
+        else:
+            print(f"{RED}Transaction failed (status 0){RESET}")
+            return False
+            
     except Exception as e:
-        print(f'{RED}Error sending native token: {e}{RESET}')
+        print(f"{RED}Error: {type(e).__name__}: {e}{RESET}")
         return False
         
 def get_random_address_from_block(block_number=None):
@@ -221,72 +288,90 @@ tknaddr = web3.to_checksum_address(input('Input Token Address : '))
 total_runs = int(input('How many transactions to run? (e.g., 100) : '))
 print(f'')
 
+
 def sendTX():
     try:
         with open('pvkeylist.txt', 'r') as file:
             local_data = file.read().splitlines()
 
-            # Check if the file is empty
             if not local_data:
                 print(f"{RED}Notice: 'pvkeylist.txt' is empty. Exiting...{RESET}")
                 sys.exit(1)
 
-            # Process each private key in the list
             for pvkeylist in local_data:
                 try:
-                    # Check if the private key is valid
                     sender = web3.eth.account.from_key(pvkeylist)
                 except ValueError:
-                    print(f"{RED}Notice: Invalid private key format. Exiting...{RESET}")
-                    sys.exit(1)
+                    print(f"{RED}Invalid private key format. Skipping...{RESET}")
+                    continue
                 
-                # Initialize counters for this account
                 successful_txs = 0
                 failed_txs = 0
                 
-                # Run transactions for this account
                 for run in range(1, total_runs + 1):
                     print(f'\n{MAGENTA}=== Transaction {run} of {total_runs} ==={RESET}')
                     
-                    sender = web3.eth.account.from_key(pvkeylist)
-                    recipient = web3.to_checksum_address(get_random_address_from_block())
-                    amountrandom = random.uniform(amountmin, amountmax)
-                    
-                    # Send Native
-                    native_success = sendNative(sender.address, sender.key, amountrandom, recipient)
-                    print(f'')
-                    
-                    # Deploy Contract
-                    ctraddr, deploy_success = deployContract(sender.address, sender.key)
-                    print(f'')
-                    
-                    # Write Contract if deployment was successful
-                    write_success = False
-                    if deploy_success and ctraddr:
-                        write_success = writeContract(sender.address, sender.key, ctraddr)
-                        print(f'')
-                    
-                    # Send Token
-                    token_success = sendToken(sender.address, sender.key, tknaddr, amountrandom, recipient)
-                    print(f'')
-                    
-                    # Update counters
-                    if native_success and deploy_success and write_success and token_success:
-                        successful_txs += 1
-                    else:
+                    try:
+                        # Check native balance first
+                        balance = web3.eth.get_balance(sender.address)
+                        if balance < web3.to_wei(0.01, 'ether'):
+                            print(f'{YELLOW}Low balance: {web3.from_wei(balance, "ether")} ETH. Skipping...{RESET}')
+                            failed_txs += 1
+                            time.sleep(2)
+                            continue
+                            
+                        recipient = web3.to_checksum_address(get_random_address_from_block())
+                        amountrandom = random.uniform(amountmin, amountmax)
+                        
+                        # Add increasing delay between transactions
+                        time.sleep(1 + (run * 0.1))
+                        
+                        # Transaction sequence with logging
+                        tx_results = {}
+                        
+                        # 1. Native Transfer
+                        print(f'\n{CYAN}1. {TRANSACTION_TYPES["native"]}{RESET}')
+                        tx_results['native'] = sendNative(sender.address, sender.key, amountrandom, recipient)
+                        
+                        # 2. Contract Deployment
+                        print(f'\n{CYAN}2. {TRANSACTION_TYPES["deploy"]}{RESET}')
+                        ctraddr, tx_results['deploy'] = deployContract(sender.address, sender.key)
+                        
+                        # 3. Contract Interaction
+                        print(f'\n{CYAN}3. {TRANSACTION_TYPES["interact"]}{RESET}')
+                        if tx_results['deploy'] and ctraddr:
+                            tx_results['interact'] = writeContract(sender.address, sender.key, ctraddr)
+                        else:
+                            print(f"{YELLOW}Skipping interaction - deployment failed{RESET}")
+                            tx_results['interact'] = False
+                        
+                        # 4. Token Transfer
+                        print(f'\n{CYAN}4. {TRANSACTION_TYPES["token"]}{RESET}')
+                        tx_results['token'] = sendToken(sender.address, sender.key, tknaddr, amountrandom, recipient)
+                        
+                        # Transaction summary
+                        print(f'\n{YELLOW}=== Transaction {run} Summary ==={RESET}')
+                        for tx_type, success in tx_results.items():
+                            status = f"{GREEN}✓ Success{RESET}" if success else f"{RED}✗ Failed{RESET}"
+                            print(f"{TRANSACTION_TYPES[tx_type]}: {status}")
+                        
+                        # Update counters
+                        if all(tx_results.values()):
+                            successful_txs += 1
+                        else:
+                            failed_txs += 1
+                            
+                    except Exception as e:
+                        print(f'{RED}Transaction sequence failed: {e}{RESET}')
                         failed_txs += 1
-                    
-                    # Add delay between transactions to avoid nonce issues
-                    time.sleep(3)
+                        time.sleep(5)
+                        continue
                 
-                # Print summary for this account
                 print(f'\n{CYAN}=== Account Summary ==={RESET}')
-                print(f'{GREEN}Successful transactions: {successful_txs}{RESET}')
-                print(f'{RED}Failed transactions: {failed_txs}{RESET}')
-                print(f'{YELLOW}Total transactions attempted: {total_runs}{RESET}\n')
+                print(f'{GREEN}Successful: {successful_txs}{RESET}')
+                print(f'{RED}Failed: {failed_txs}{RESET}')
+                print(f'{YELLOW}Success rate: {successful_txs/total_runs*100:.2f}%{RESET}\n')
                 
     except Exception as e:
-        print(f'{RED}Error in main loop: {e}{RESET}')
-        pass
-        
+        print(f'{RED}Fatal error: {e}{RESET}')
 sendTX()
