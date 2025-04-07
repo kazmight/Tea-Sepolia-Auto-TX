@@ -14,7 +14,7 @@ MAGENTA = '\033[95m'
 RESET = '\033[0m'
 
 # Banner dengan warna rainbow
-print(f'{RED}H{YELLOW}e{GREEN}l{YELLOW}l{RED}o {CYAN}E{MAGENTA}V{GREEN}M {YELLOW}T{RED}e{CYAN}a {MAGENTA}S{GREEN}e{YELLOW}p{RED}o{CYAN}l{MAGENTA}i{YELLOW}a {GREEN}T{RED}e{YELLOW}s{CYAN}t{MAGENTA}n{GREEN}e{YELLOW}t {RED}B{CYAN}y {MAGENTA}A{YELLOW}D{GREEN}F{RED}M{YELLOW}I{CYAN}D{MAGENTA}N {GREEN}T{YELLOW}e{RED}a{CYAN}m{RESET}')
+print(f'{RED}H{YELLOW}e{GREEN}l{YELLOW}l{RED}o {CYAN}E{MAGENTA}V{GREEN}M {YELLOW}T{RED}e{CYAN}a {MAGENTA}S{GREEN}e{YELLOW}p{RED}o{CYAN}l{MAGENTA}i{YELLOW}a {GREEN}T{RED}e{YELLOW}s{CYAN}t{MAGENTA}n{GREEN}e{YELLOW}t {RED}B{CYAN}y {MAGENTA}I{YELLOW}N{GREEN}V{RED}I{YELLOW}C{CYAN}T{MAGENTA}U{YELLOW}S {GREEN}L{RED}A{YELLOW}B{CYAN}S{RESET}')
 print(f'{GREEN}- {YELLOW}Auto {RED}Send {GREEN}Native {YELLOW}To {RED}Random {GREEN}Recipient {YELLOW}Address{RESET}')
 print(f'{YELLOW}- {RED}Auto {GREEN}Deploy {YELLOW}Contract{RESET}')
 print(f'{RED}- {GREEN}Auto {YELLOW}Interaction {RED}Contract{RESET}')
@@ -30,6 +30,7 @@ print(f'')
 
 web3 = Web3(Web3.HTTPProvider("https://tea-sepolia.g.alchemy.com/public"))
 chainId = web3.eth.chain_id
+
 
 # ... (bagian sebelumnya tetap sama sampai fungsi sendNative) ...
 
@@ -173,7 +174,7 @@ def sendTX():
                         failed_count += 1
                     print(f'')
                     
-                    time.sleep(1)
+                    time.sleep(5)
         
         # Tampilkan ringkasan
         print(f'\n{GREEN}Transaksi Sukses: {success_count}{RESET}')
