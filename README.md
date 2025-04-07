@@ -28,18 +28,19 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
    git clone https://github.com/kazmight/Tea-Sepolia-Auto-TX.git
    cd Tea-Sepolia-Auto-TX
 
-2. Install Dependencies
-   ```bash
-   pip install web3
-   pip3 install web3 python-dotenv
-
-3. Install Python 3.10 :
+2. Install Python 3.10 :
    ```bash
    sudo apt update && sudo apt upgrade -y
    sudo apt install software-properties-common -y
    add-apt-repository ppa:deadsnakes/ppa
    sudo apt install python3.10
    sudo apt install python3-pip
+
+3. Install Dependencies
+   ```bash
+   pip install web3
+   pip3 install web3 python-dotenv
+
 
 4. Prepare Privatekey.txt :
    ```bash
