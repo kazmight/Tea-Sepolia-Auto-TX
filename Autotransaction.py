@@ -105,20 +105,38 @@ def sendNative(sender, key, amount, recipient):
         raw_tx = signed.rawTransaction if hasattr(signed, 'rawTransaction') else signed.raw_transaction
         tx_hash = web3.eth.send_raw_transaction(raw_tx)
         
-        print(f"{CYAN}Sending {amount:.6f} ETH...{RESET}")
+        print(f"{CYAN}Sending {amount:.6f} ETH to {recipient}...{RESET}")
+        print(f"{YELLOW}Transaction Hash: {web3.to_hex(tx_hash)}{RESET}")
         
-        # Wait for receipt
-        receipt = web3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        # Wait for receipt with longer timeout
+        receipt = web3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
         
         if receipt.status == 1:
             print(f"{GREEN}Success! TX: {web3.to_hex(tx_hash)}{RESET}")
+            print(f"{GREEN}Gas Used: {receipt.gasUsed} | Effective Gas Price: {web3.from_wei(receipt.effectiveGasPrice, 'gwei'):.2f} gwei{RESET}")
             return True
         else:
-            print(f"{RED}Transaction failed (status 0){RESET}")
+            # Try to get more detailed error information
+            try:
+                tx_data = web3.eth.get_transaction(tx_hash)
+                print(f"{RED}Transaction failed (status 0){RESET}")
+                print(f"{YELLOW}Possible reasons:{RESET}")
+                print(f"- Insufficient gas (used {receipt.gasUsed} of {tx_data.gas} provided)")
+                print(f"- Reverted by EVM")
+                print(f"- Invalid recipient address")
+                print(f"{YELLOW}View on block explorer: https://sepolia.etherscan.io/tx/{web3.to_hex(tx_hash)}{RESET}")
+            except Exception as e:
+                print(f"{RED}Failed to get transaction details: {e}{RESET}")
             return False
             
     except Exception as e:
-        print(f"{RED}Error: {type(e).__name__}: {e}{RESET}")
+        print(f"{RED}Error in sendNative: {type(e).__name__}: {e}{RESET}")
+        if 'nonce too low' in str(e):
+            print(f"{YELLOW}Solution: Wait for pending transactions to confirm{RESET}")
+        elif 'insufficient funds' in str(e):
+            print(f"{YELLOW}Solution: Fund your wallet or reduce transaction amount{RESET}")
+        elif 'replacement transaction underpriced' in str(e):
+            print(f"{YELLOW}Solution: Increase gas price or wait for pending transactions{RESET}")
         return False
         
 def writeContract(sender, key, ctraddr):
