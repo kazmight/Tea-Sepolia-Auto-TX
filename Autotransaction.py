@@ -28,7 +28,9 @@ print(f'{YELLOW}T{RED}e{CYAN}a {MAGENTA}S{GREEN}e{YELLOW}p{RED}o{CYAN}l{MAGENTA}
 print(f'{GREEN}- {YELLOW}Auto {RED}Send {GREEN}Native {YELLOW}To {RED}Random {GREEN}Recipient {YELLOW}Address{RESET}')
 print(f'{YELLOW}- {RED}Auto {GREEN}Deploy {YELLOW}Contract{RESET}')
 print(f'{RED}- {GREEN}Auto {YELLOW}Interaction {RED}Contract{RESET}')
-print(f'{GREEN}- {YELLOW}Auto {RED}Send {GREEN}Spesific {YELLOW}Token {RED}To {GREEN}Random {YELLOW}Recipient {RED}Address{RESET}\n')
+print(f'{GREEN}- {YELLOW}Auto {RED}Send {GREEN}Spesific {YELLOW}Token {RED}To {GREEN}Random {YELLOW}Recipient {RED}Address{RESET}')
+
+
 
 # Setup Web3
 web3 = Web3(Web3.HTTPProvider("https://tea-sepolia.g.alchemy.com/public"))
@@ -145,7 +147,7 @@ def writeContract(sender, key, ctraddr):
         #sign & send the transaction
         tx_hash = web3.eth.send_raw_transaction(web3.eth.account.sign_transaction(msg_tx, key).rawTransaction)
         #get transaction hash
-        print(f'Processing Interaction On Contract {ctraddr} From {sender} ...')
+        print(f'{CYAN}Processing Interaction On Contract {ctraddr} From {sender} ...{RESET}')
         web3.eth.wait_for_transaction_receipt(tx_hash)
         print(f'{GREEN}Interaction On Contract {ctraddr} From {sender} Success!{RESET}')
         print(f'{GREEN}TX-ID : {str(web3.to_hex(tx_hash))}{RESET}')
@@ -200,54 +202,85 @@ def deployContract(sender, key):
         return None, False
 
 
-def sendNative(sender, key, amount, recipient):
+def sendToken(sender, key, token_address, amount, recipient):
+    """Send ERC20 tokens to a recipient address"""
     try:
-        # Validate inputs
+        # Validate addresses
         if not web3.is_address(recipient):
             print(f"{RED}Invalid recipient address{RESET}")
             return False
-
-        # Get gas parameters
-        gas_params = get_gas_parameters()
-        
-        # Convert amount
-        amount_wei = web3.to_wei(amount, 'ether')
-        
-        # Build transaction
-        tx = {
-            'chainId': chainId,
-            'to': recipient,
-            'value': amount_wei,
-            'nonce': web3.eth.get_transaction_count(sender),
-            **gas_params
-        }
-
-        # Check balance
-        balance = web3.eth.get_balance(sender)
-        required = amount_wei + (tx['gas'] * tx['maxFeePerGas'])
-        if balance < required:
-            print(f"{RED}Insufficient balance: Need {web3.from_wei(required, 'ether'):.6f} ETH, has {web3.from_wei(balance, 'ether'):.6f} ETH{RESET}")
+        if not web3.is_address(token_address):
+            print(f"{RED}Invalid token address{RESET}")
             return False
 
-        # Sign and send
-        signed = web3.eth.account.sign_transaction(tx, key)
-        raw_tx = signed.rawTransaction if hasattr(signed, 'rawTransaction') else signed.raw_transaction
-        tx_hash = web3.eth.send_raw_transaction(raw_tx)
+        # Get checksum addresses
+        token_address = web3.to_checksum_address(token_address)
+        recipient = web3.to_checksum_address(recipient)
         
-        print(f"{CYAN}Sending {amount:.6f} ETH...{RESET}")
+        # Initialize token contract
+        token_contract = web3.eth.contract(address=token_address, abi=token_abi)
+        
+        # Get token decimals
+        try:
+            decimals = token_contract.functions.decimals().call()
+        except:
+            decimals = 18  # Default to 18 decimals if not available
+            
+        # Convert amount to token units
+        amount_wei = int(amount * (10 ** decimals))
+        
+        # Get gas parameters with higher gas limit for token transfers
+        gas_params = get_gas_parameters()
+        gas_params['gas'] = 150000  # Higher gas limit for token transfers
+        
+        # Build transaction
+        tx = token_contract.functions.transfer(
+            recipient,
+            amount_wei
+        ).build_transaction({
+            'chainId': chainId,
+            'from': sender,
+            'nonce': web3.eth.get_transaction_count(sender),
+            **gas_params
+        })
+
+        # Check ETH balance for gas
+        eth_balance = web3.eth.get_balance(sender)
+        required_gas = tx['gas'] * tx['maxFeePerGas']
+        if eth_balance < required_gas:
+            print(f"{RED}Insufficient ETH for gas: Need {web3.from_wei(required_gas, 'ether'):.6f} ETH, has {web3.from_wei(eth_balance, 'ether'):.6f} ETH{RESET}")
+            return False
+
+        # Check token balance
+        token_balance = token_contract.functions.balanceOf(sender).call()
+        if token_balance < amount_wei:
+            print(f"{RED}Insufficient token balance: Need {amount} tokens, has {token_balance/(10**decimals)} tokens{RESET}")
+            return False
+
+        # Sign and send transaction
+        signed_tx = web3.eth.account.sign_transaction(tx, key)
+        tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        
+        print(f"{CYAN}Sending {amount} tokens from {token_address} to {recipient}...{RESET}")
         
         # Wait for receipt
         receipt = web3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
         
         if receipt.status == 1:
-            print(f"{GREEN}Success! TX: {web3.to_hex(tx_hash)}{RESET}")
+            print(f"{GREEN}Token transfer successful! TX: {web3.to_hex(tx_hash)}{RESET}")
             return True
         else:
-            print(f"{RED}Transaction failed (status 0){RESET}")
+            print(f"{RED}Token transfer failed (status 0){RESET}")
             return False
             
+    except ContractLogicError as e:
+        print(f"{RED}Contract error: {str(e)}{RESET}")
+        return False
+    except ValueError as e:
+        print(f"{RED}Value error: {str(e)}{RESET}")
+        return False
     except Exception as e:
-        print(f"{RED}Error: {type(e).__name__}: {e}{RESET}")
+        print(f"{RED}Unexpected error in sendToken: {type(e).__name__}: {str(e)}{RESET}")
         return False
         
 def get_random_address_from_block(block_number=None):
@@ -281,13 +314,37 @@ def get_random_address_from_block(block_number=None):
         print(f"{RED}Error while fetching block data: {e}{RESET}")
         return None
 
-# Get user inputs
-amountmin = float(input('Min Send Amount : '))
-amountmax = float(input('Max Send Amount : '))
-tknaddr = web3.to_checksum_address(input('Input Token Address : '))
-total_runs = int(input('How many transactions to run? (e.g., 100) : '))
-print(f'')
+def get_float_input(prompt):
+    while True:
+        try:
+            value = input(prompt)
+            if not value:
+                print(f"{RED}Input tidak boleh kosong.{RESET}")
+                continue
+            return float(value)
+        except ValueError:
+            print(f"{RED}Masukkan angka yang valid.{RESET}")
 
+amountmin = get_float_input(f'{YELLOW}Min Send Amount : {RESET}')
+amountmax = get_float_input(f'{YELLOW}Max Send Amount : {RESET}')
+tknaddr = web3.to_checksum_address(input(f'{YELLOW}Input Token Address : {RESET}'))
+total_runs = int(input(f'{YELLOW}How many transactions to run? (e.g., 1-100) : {RESET}'))
+print('')
+
+
+from web3 import Web3, HTTPProvider
+import json
+import random
+import time
+import sys
+from web3.exceptions import ContractLogicError
+
+# [Previous constant and setup code remains the same...]
+
+def show_balance(address):
+    """Show native token balance for an address"""
+    balance = web3.eth.get_balance(address)
+    return web3.from_wei(balance, 'ether')
 
 def sendTX():
     try:
@@ -305,13 +362,19 @@ def sendTX():
                     print(f"{RED}Invalid private key format. Skipping...{RESET}")
                     continue
                 
+                # Show initial balance
+                initial_balance = show_balance(sender.address)
+                print(f"\n{YELLOW}=== Initial Balance ==={RESET}")
+                print(f"{GREEN}Address: {sender.address}{RESET}")
+                print(f"{GREEN}Balance: {initial_balance:.6f} ETH{RESET}")
+                
                 successful_txs = 0
                 failed_txs = 0
                 
                 for run in range(1, total_runs + 1):
-                    print(f'\n{MAGENTA}=== Transaction {run} of {total_runs} ==={RESET}')
-                    
                     try:
+                        print(f'\n{MAGENTA}=== Transaction {run} of {total_runs} ==={RESET}')
+                        
                         # Check native balance first
                         balance = web3.eth.get_balance(sender.address)
                         if balance < web3.to_wei(0.01, 'ether'):
@@ -351,9 +414,11 @@ def sendTX():
                         
                         # Transaction summary
                         print(f'\n{YELLOW}=== Transaction {run} Summary ==={RESET}')
-                        for tx_type, success in tx_results.items():
-                            status = f"{GREEN}✓ Success{RESET}" if success else f"{RED}✗ Failed{RESET}"
-                            print(f"{TRANSACTION_TYPES[tx_type]}: {status}")
+                        print(f"{YELLOW}Native Transfer: {GREEN}✓ Success{RESET}" if tx_results['native'] else f"{YELLOW}Native Transfer: {RED}✗ Failed{RESET}")
+                        print(f"{YELLOW}Contract Deployment: {GREEN}✓ Success{RESET}" if tx_results['deploy'] else f"{YELLOW}Contract Deployment: {RED}✗ Failed{RESET}")
+                        print(f"{YELLOW}Contract Interaction: {GREEN}✓ Success{RESET}" if tx_results['interact'] else f"{YELLOW}Contract Interaction: {RED}✗ Failed{RESET}")
+                        print(f"{YELLOW}Token Transfer: {GREEN}✓ Success{RESET}" if tx_results['token'] else f"{YELLOW}Token Transfer: {RED}✗ Failed{RESET}")
+
                         
                         # Update counters
                         if all(tx_results.values()):
@@ -367,6 +432,13 @@ def sendTX():
                         time.sleep(5)
                         continue
                 
+                # Show final balance
+                final_balance = show_balance(sender.address)
+                print(f"\n{YELLOW}=== Final Balance ==={RESET}")
+                print(f"{GREEN}Address: {sender.address}{RESET}")
+                print(f"{GREEN}Balance: {final_balance:.6f} ETH{RESET}")
+                print(f"{GREEN}Balance Change: {initial_balance-final_balance:.6f} ETH{RESET}")
+                
                 print(f'\n{CYAN}=== Account Summary ==={RESET}')
                 print(f'{GREEN}Successful: {successful_txs}{RESET}')
                 print(f'{RED}Failed: {failed_txs}{RESET}')
@@ -374,4 +446,6 @@ def sendTX():
                 
     except Exception as e:
         print(f'{RED}Fatal error: {e}{RESET}')
+
+# [Rest of your code remains the same...]
 sendTX()
