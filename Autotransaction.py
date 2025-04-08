@@ -21,7 +21,6 @@ TRANSACTION_TYPES = {
     'token': 'Token Transfer'
 }
 
-# [Rest of your existing imports and setup code...]
 
 # Intro
 print(f'{YELLOW}T{RED}e{CYAN}a {MAGENTA}S{GREEN}e{YELLOW}p{RED}o{CYAN}l{MAGENTA}i{YELLOW}a {GREEN}T{RED}e{YELLOW}s{CYAN}t{MAGENTA}n{GREEN}e{YELLOW}t {RED}B{CYAN}y {MAGENTA}I{YELLOW}N{GREEN}V{RED}I{YELLOW}C{CYAN}T{MAGENTA}U{YELLOW}S {GREEN}L{RED}A{YELLOW}B{CYAN}S{RESET}')
@@ -357,7 +356,7 @@ import time
 import sys
 from web3.exceptions import ContractLogicError
 
-# [Previous constant and setup code remains the same...]
+
 
 def show_balance(address):
     """Show native token balance for an address"""
@@ -465,5 +464,5 @@ def sendTX():
     except Exception as e:
         print(f'{RED}Fatal error: {e}{RESET}')
 
-# [Rest of your code remains the same...]
+
 sendTX()
