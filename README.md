@@ -8,10 +8,10 @@ Script otomatis untuk berinteraksi dengan jaringan EVM Tea Sepolia Testnet. Dibu
 
 ## 🌟 Fitur Utama
 
-- 🚀 **Auto Send Native** - Mengirim aset native ke alamat acak
+- 🚀 **Auto Send Native** - Mengirim aset native ke alamat acak di block explorer terakhir 
 - 📜 **Auto Deploy Contract** - Melakukan deploy kontrak cerdas
 - 🤖 **Auto Interaction Contract** - Berinteraksi dengan kontrak yang sudah terdeploy
-- 💰 **Auto Send Token** - Mengirim token spesifik ke alamat acak
+- 💰 **Auto Send Token** - Mengirim token spesifik ke alamat acak block explorer terakhir
 - 🎨 **Colorful Output** - Status transaksi dengan warna (hijau/kuning/merah)
 
 ## 🛠️ Persyaratan
