@@ -124,7 +124,7 @@ def sendNative(sender, key, amount, recipient):
                 print(f"- Insufficient gas (used {receipt.gasUsed} of {tx_data.gas} provided)")
                 print(f"- Reverted by EVM")
                 print(f"- Invalid recipient address")
-                print(f"{YELLOW}View on block explorer: https://sepolia.etherscan.io/tx/{web3.to_hex(tx_hash)}{RESET}")
+                print(f"{YELLOW}View on block explorer: https://sepolia.tea.xyz/tx/{web3.to_hex(tx_hash)}{RESET}")
             except Exception as e:
                 print(f"{RED}Failed to get transaction details: {e}{RESET}")
             return False
