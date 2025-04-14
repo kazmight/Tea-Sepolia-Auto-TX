@@ -23,7 +23,16 @@ TRANSACTION_TYPES = {
 
 
 # Intro
-print(f'{YELLOW}T{RED}e{CYAN}a {MAGENTA}S{GREEN}e{YELLOW}p{RED}o{CYAN}l{MAGENTA}i{YELLOW}a {GREEN}T{RED}e{YELLOW}s{CYAN}t{MAGENTA}n{GREEN}e{YELLOW}t {RED}B{CYAN}y {MAGENTA}I{YELLOW}N{GREEN}V{RED}I{YELLOW}C{CYAN}T{MAGENTA}U{YELLOW}S {GREEN}L{RED}A{YELLOW}B{CYAN}S{RESET}')
+print("\033[31m")  # Mulai warna merah
+print(r"""
+██ ███    ██ ██    ██ ██  ██████ ████████ ██    ██ ███████     ██       █████  ██████  ███████ 
+██ ████   ██ ██    ██ ██ ██         ██    ██    ██ ██          ██      ██   ██ ██   ██ ██      
+██ ██ ██  ██ ██    ██ ██ ██         ██    ██    ██ ███████     ██      ███████ ██████  ███████ 
+██ ██  ██ ██  ██  ██  ██ ██         ██    ██    ██      ██     ██      ██   ██ ██   ██      ██ 
+██ ██   ████   ████   ██  ██████    ██     ██████  ███████     ███████ ██   ██ ██████  ███████ 
+""")
+print("\033[0m")  # Reset warna ke default 
+
 print(f'{GREEN}- {YELLOW}Auto {RED}Send {GREEN}Native {YELLOW}To {RED}Random {GREEN}Recipient {YELLOW}Address{RESET}')
 print(f'{YELLOW}- {RED}Auto {GREEN}Deploy {YELLOW}Contract{RESET}')
 print(f'{RED}- {GREEN}Auto {YELLOW}Interaction {RED}Contract{RESET}')
